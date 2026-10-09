@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>単語帳 — ฝึกคำศัพท์ญี่ปุ่น-ไทย</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+Thai:wght@400;500;600&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<!-- SheetJS: โหลดจาก CDN; ถ้าโหลดไม่ได้ จะลองไฟล์ในเครื่อง libs/xlsx.full.min.js (ดู README) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
+        onerror="var s=document.createElement('script');s.src='libs/xlsx.full.min.js';document.head.appendChild(s);"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนูโฟลเดอร์">☰</button>
+  <div class="topbar-title" id="topTitle">หน้าแรก</div>
+  <span class="topbar-folder" id="topFolder"></span>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><span class="brand-mark">単</span><div><b>単語帳</b><small>Japanese–Thai Flashcards</small></div></div>
+
+    <nav class="nav" id="mainNav">
+      <button data-view="dashboard"><span>🏠</span> หน้าแรก <small>Dashboard</small></button>
+      <button data-view="study"><span>🎴</span> เรียน <small>Flashcards</small></button>
+      <button data-view="words"><span>📚</span> คำศัพท์ <small>Words</small></button>
+      <button data-view="backup"><span>💾</span> สำรองข้อมูล <small>Backup</small></button>
+    </nav>
+
+    <div class="side-head">
+      <span>โฟลเดอร์ <small>Folders</small></span>
+      <button class="mini-btn" id="addFolderBtn" title="สร้างโฟลเดอร์ใหม่">＋</button>
+    </div>
+    <ul class="folder-list" id="folderList"></ul>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main">
+
+    <!-- ===== Dashboard ===== -->
+    <section class="view" id="view-dashboard">
+      <h1>ภาพรวมการเรียน</h1>
+      <p class="muted" id="dashScope"></p>
+      <div class="stats" id="dashStats"></div>
+      <div class="panel">
+        <div class="row between"><b>ความคืบหน้า <small class="muted">Progress</small></b><span id="dashPct" class="muted"></span></div>
+        <div class="bar"><div id="dashBar"></div></div>
+        <p class="muted small">คำนวณจากสัดส่วนคำที่ประเมินว่า "จำได้" ล่าสุด</p>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="dashStart">🎴 Start Random Flashcards</button>
+        <button class="btn" id="dashImport">📥 Import Excel</button>
+        <button class="btn" id="dashAdd">＋ Add Vocabulary</button>
+      </div>
+      <div id="dashEmpty"></div>
+    </section>
+
+    <!-- ===== Study ===== -->
+    <section class="view" id="view-study" hidden>
+      <div class="study-bar">
+        <label>โหมด <small>Mode</small>
+          <select id="modeSel">
+            <option value="all">All Cards — ทุกคำ</option>
+            <option value="new">New Words — ยังไม่เคยทบทวน</option>
+            <option value="review">Review — ยังไม่แม่น / จำไม่ได้</option>
+            <option value="learned">Learned — จำได้แล้ว</option>
+            <option value="random">Random Practice — สุ่ม 20 คำ</option>
+          </select>
+        </label>
+        <span class="muted" id="studyScope"></span>
+      </div>
+      <div class="banner" id="newWordsBanner" hidden></div>
+      <div id="studyArea"></div>
+    </section>
+
+    <!-- ===== Words ===== -->
+    <section class="view" id="view-words" hidden>
+      <div class="row between wrap">
+        <h1>รายการคำศัพท์</h1>
+        <div class="row gap">
+          <button class="btn" id="wordsImport">📥 Import Excel</button>
+          <button class="btn primary" id="wordsAdd">＋ เพิ่มคำศัพท์</button>
+        </div>
+      </div>
+      <div class="filters">
+        <input type="search" id="q" placeholder="ค้นหา: ญี่ปุ่น / คานะ / Romaji / ความหมายไทย">
+        <select id="fLevel"></select>
+        <select id="fSort">
+          <option value="jp">เรียง: ตัวอักษรญี่ปุ่น</option>
+          <option value="th">เรียง: ตัวอักษรไทย</option>
+          <option value="new">เรียง: เพิ่มล่าสุด</option>
+          <option value="old">เรียง: เพิ่มเก่าสุด</option>
+        </select>
+      </div>
+      <div class="bulk" id="bulkBar" hidden></div>
+      <div class="panel flush"><table class="wtable"><thead><tr>
+        <th><input type="checkbox" id="selAll" aria-label="เลือกทั้งหมดในหน้านี้"></th><th>ญี่ปุ่น</th><th>ความหมายไทย</th><th>โฟลเดอร์</th><th>JLPT</th><th>สถานะ</th><th></th>
+      </tr></thead><tbody id="wbody"></tbody></table></div>
+      <div class="pager" id="pager"></div>
+    </section>
+
+    <!-- ===== Backup ===== -->
+    <section class="view" id="view-backup" hidden>
+      <h1>ส่งออก / สำรองข้อมูล</h1>
+      <div class="panel">
+        <b>Export Excel</b>
+        <p class="muted small">ไฟล์ที่ได้ใช้คอลัมน์เดียวกับ Template จึงนำกลับมา Import ได้</p>
+        <div class="row gap wrap">
+          <button class="btn" id="expAll">⬇ ทุกโฟลเดอร์ (.xlsx)</button>
+          <select id="expFolderSel"></select>
+          <button class="btn" id="expFolder">⬇ เฉพาะโฟลเดอร์ที่เลือก</button>
+        </div>
+      </div>
+      <div class="panel">
+        <b>สำรองข้อมูลแบบ JSON</b>
+        <p class="muted small">เก็บทั้งคำศัพท์ โฟลเดอร์ และสถานะการเรียน ใช้กู้คืนหรือย้ายไปอุปกรณ์อื่น</p>
+        <div class="row gap wrap">
+          <button class="btn" id="expJson">⬇ Export JSON</button>
+          <button class="btn" id="impJson">⬆ Import JSON</button>
+          <input type="file" id="jsonFile" accept=".json,application/json" hidden>
+        </div>
+      </div>
+      <div class="panel">
+        <b>Template สำหรับ Excel</b>
+        <p class="muted small">ชีตชื่อ <code>Vocabulary</code> แถวแรกเป็นชื่อคอลัมน์ — ต้องมีอย่างน้อย Japanese และ Thai Meaning</p>
+        <a class="btn" href="Japanese_Thai_Vocabulary_Template.xlsx" download>⬇ ดาวน์โหลด Template</a>
+      </div>
+      <p class="muted small">ℹ️ ข้อมูลเก็บใน IndexedDB ของเบราว์เซอร์เครื่องนี้ ไม่ซิงก์ข้ามเครื่อง และจะหายถ้าล้างข้อมูลเบราว์เซอร์ — โปรดสำรอง JSON เป็นระยะ</p>
+    </section>
+  </main>
+</div>
+
+<nav class="bottom-nav" id="bottomNav">
+  <button data-view="dashboard"><span>🏠</span>หน้าแรก</button>
+  <button data-view="study"><span>🎴</span>เรียน</button>
+  <button data-view="words"><span>📚</span>คำศัพท์</button>
+  <button data-view="backup"><span>💾</span>สำรอง</button>
+</nav>
+
+<input type="file" id="excelFile" accept=".xlsx,.xls" hidden>
+<div id="modalRoot"></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script src="db.js"></script>
+<script src="import.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
